@@ -1,17 +1,17 @@
 dataset:
   type: chembl
   files:
-    - /LUSTRE/users/pvaras/sequence_gpt/data/databases/chembl/chembl1_filtered.csv
-    - /LUSTRE/users/pvaras/sequence_gpt/data/databases/chembl/chembl2_filtered.csv
+    - /LUSTRE/users/pvaras/sequence_gpt/data/very_big_molecules_selfies_2/chembl/chembl1_filtered.csv
+    - /LUSTRE/users/pvaras/sequence_gpt/data/very_big_molecules_selfies_2/chembl/chembl2_filtered.csv
 
 tokenizer:
   type: selfies
   max_length: 156
-  meta_path: data/tokenizer/meta_chembl.pkl
+  meta_path: datasets/tokenizer/meta_chembl.pkl
   extend_existing_vocab: true
 
 output:
-  dir: data/very_big_molecules_selfies_2
+  dir: datasets/very_big_molecules_selfies_2
   train_file: train_chembl.bin
   val_file: val_chembl.bin
 

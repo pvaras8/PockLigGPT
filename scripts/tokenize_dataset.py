@@ -1,6 +1,8 @@
 import argparse
 import os
 from pathlib import Path
+from typing import Union
+
 
 import yaml
 from sklearn.model_selection import train_test_split
@@ -31,7 +33,7 @@ def load_config(config_path: str) -> dict:
         return yaml.safe_load(f)
 
 
-def ensure_parent_dir(path: str | Path):
+def ensure_parent_dir(path: Union[str, Path]):
     Path(path).parent.mkdir(parents=True, exist_ok=True)
 
 

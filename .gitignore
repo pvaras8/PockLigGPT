@@ -47,8 +47,7 @@ nohup.out
 # =========================
 # Datos y arrays grandes
 # =========================
-data/
-datasets/
+
 results/
 outputs/
 cache/
