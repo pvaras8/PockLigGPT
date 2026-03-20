@@ -5,12 +5,11 @@ dataset:
 tokenizer:
   type: pocket_ligand
   max_length: 156
-  meta_path: data/very_big_molecules_selfies_2/meta_chembl_db_aa_2_proto4.pkl
-  extend_existing_vocab: true
+  meta_path: datasets/tokenizer/meta_chembl_db_aa_2_proto4.pkl
 
 
 output:
-  dir: data/very_big_molecules_selfies_2
+  dir: datasets/processed/crossdocked
   train_file: train_crossdocked.bin
   val_file: val_crossdocked.bin
 

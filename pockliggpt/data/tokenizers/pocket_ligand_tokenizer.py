@@ -13,70 +13,19 @@ AA_ONE_TO_TOKEN = {
 
 
 class PocketLigandTokenizer:
-    SPECIAL_TOKENS = [
-        "<PAD>", "<SOS>", "<EOS>", "<UNK>",
-        "<LIGAND>", "</LIGAND>", "<POCKET>", "</POCKET>"
-    ]
+    def __init__(self, meta_path):
+        if not meta_path:
+            raise ValueError("Debes pasar meta_path obligatoriamente.")
+        if not os.path.exists(meta_path):
+            raise FileNotFoundError(f"No existe el vocabulario: {meta_path}")
 
-    def __init__(self, data=None, meta_path=None):
-        if meta_path and os.path.exists(meta_path):
-            self.load_meta(meta_path)
-            self._ensure_special_tokens(self.SPECIAL_TOKENS + list(AA_ONE_TO_TOKEN.values()))
-        else:
-            if data is None or "selfies" not in data:
-                raise ValueError("Para crear un vocabulario nuevo necesitas data con columna 'selfies'.")
-            self.id2token = self.build_tokenizer(data["selfies"])
-            self.add_special_tokens()
-            self._ensure_special_tokens(list(AA_ONE_TO_TOKEN.values()))
-
+        self.load_meta(meta_path)
         self.token2id = {v: k for k, v in self.id2token.items()}
 
     def split_selfies(self, s):
         if not isinstance(s, str):
             return []
         return re.findall(r"\[[^\]]+\]", s)
-
-    def build_tokenizer(self, selfies_series):
-        tokens = set()
-        for s in selfies_series:
-            if isinstance(s, str):
-                tokens.update(self.split_selfies(s))
-        return {i: t for i, t in enumerate(sorted(tokens))}
-
-    def add_special_tokens(self):
-        base = len(self.id2token)
-        for i, t in enumerate(self.SPECIAL_TOKENS, start=base):
-            self.id2token[i] = t
-
-    def _ensure_special_tokens(self, tokens):
-        next_id = max(self.id2token) + 1 if self.id2token else 0
-        existing = set(self.id2token.values())
-        for t in tokens:
-            if t not in existing:
-                self.id2token[next_id] = t
-                next_id += 1
-
-    def extend_vocab(self, selfies_series):
-        new_tokens = set()
-
-        for s in selfies_series:
-            if isinstance(s, str):
-                new_tokens.update(self.split_selfies(s))
-
-        new_tokens = sorted(t for t in new_tokens if t not in self.token2id)
-
-        if not new_tokens:
-            print("No hay tokens SELFIES nuevos que añadir al vocabulario.")
-            return 0
-
-        next_id = max(self.id2token) + 1
-        for tok in new_tokens:
-            self.id2token[next_id] = tok
-            next_id += 1
-
-        self.token2id = {v: k for k, v in self.id2token.items()}
-        print(f"Añadidos {len(new_tokens)} tokens SELFIES nuevos al vocabulario.")
-        return len(new_tokens)
 
     def core_length(self, pocket_str, selfies_str):
         return len(pocket_str) + len(self.split_selfies(selfies_str))

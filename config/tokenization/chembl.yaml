@@ -7,11 +7,10 @@ dataset:
 tokenizer:
   type: selfies
   max_length: 156
-  meta_path: datasets/tokenizer/meta_chembl.pkl
-  extend_existing_vocab: true
+  meta_path: datasets/tokenizer/meta_chembl_db_aa_2_proto4.pkl
 
 output:
-  dir: datasets/very_big_molecules_selfies_2
+  dir: datasets/processed/chembl
   train_file: train_chembl.bin
   val_file: val_chembl.bin
 
