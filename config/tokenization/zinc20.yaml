@@ -7,12 +7,12 @@ dataset:
 tokenizer:
   type: selfies
   max_length: 156
-  meta_path: data/very_big_molecules_selfies_2/meta_chembl_db_aa_2.pkl
+  meta_path: datasets/tokenizer/meta_chembl_db_aa_2_proto4.pkl
   extend_existing_vocab: true
 
 
 output:
-  dir: data/very_big_molecules_selfies_2
+  dir: datasets/processed/zinc20
   train_file: train_zinc20.bin
   val_file: val_zinc20.bin
 
