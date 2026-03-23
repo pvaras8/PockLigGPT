@@ -1,0 +1,57 @@
+experiment:
+  name: crossdocked_sequence_finetune_2
+  stage: finetune_2
+
+model:
+  type: sequence
+  n_layer: 24
+  n_head: 16
+  n_embd: 1024
+  dropout: 0.1
+  bias: false
+
+data:
+  loader_type: sequence
+  dataset: very_big_molecules_selfies_2/cross_docked_jblasser
+  block_size: 156
+  batch_size: 16
+  meta_path: data/very_big_molecules_selfies_2/cross_docked_jblasser/meta_chembl_db_aa_2_proto4.pkl
+  train_bin: data/very_big_molecules_selfies_2/cross_docked_jblasser/train_1_ghs.bin
+  val_bin: data/very_big_molecules_selfies_2/cross_docked_jblasser/val_1_ghs.bin
+  pad_token_id: 0
+
+training:
+  init_from: resume
+  init_ckpt_path: out-models/ckpt_zink_chembl.pt
+  target_tokens: 524288
+  num_gpus: 4
+  learning_rate: 5.0e-6
+  min_lr: 5.0e-7
+  weight_decay: 0.01
+  beta1: 0.9
+  beta2: 0.95
+  grad_clip: 1.0
+  max_iters: 1200
+  lr_decay_iters: 1200
+  warmup_iters: 120
+  decay_lr: true
+
+eval:
+  eval_interval: 100
+  eval_iters: 200
+  eval_only: false
+  always_save_checkpoint: false
+
+logging:
+  out_dir: out-models
+  checkpoint_name: ckpt_crossdocked_sequence.pt
+  log_interval: 20
+  wandb_log: false
+  wandb_project: molecules-gpt
+  wandb_run_name: molecules-gpt
+
+system:
+  device: cuda
+  dtype: bfloat16
+  backend: nccl
+  compile: false
