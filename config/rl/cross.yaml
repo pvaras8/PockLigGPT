@@ -1,0 +1,85 @@
+# =========================
+# MODEL
+# =========================
+model:
+  type: "cross"
+  module: "pockliggpt.models.model_cross_attention"
+  checkpoint_path: "out-models/ckpt_zink_chembl_cross_crossatt.pt"
+  freeze_cross_attention: true
+
+# =========================
+# DATA
+# =========================
+data:
+  smiles_csv: "zink_250k.csv"
+  smiles_column: "smiles"
+
+# =========================
+# RL
+# =========================
+rl:
+  batch_size: 32
+  lr: 3e-5
+  prompt_size: 9
+  prompt_batch_size: 256
+  num_rollouts: 256
+  epochs: 30
+  ppo_epochs: 4
+  kl_coef: 0.005
+  gamma: 0.99
+  lam: 0.95
+  cliprange: 0.2
+  cliprange_value: 0.1
+  vf_coef: 1.0
+
+# =========================
+# GENERATION
+# =========================
+generation:
+  seq_length: 156
+  max_new_tokens: 147
+  top_k: 10
+  temperature: 0.9
+
+# =========================
+# PROMPT
+# =========================
+prompt:
+  format: "ligand_only"
+  include_pocket_tokens: false
+  include_pocket_embedding: true
+
+# =========================
+# CONDITIONING
+# =========================
+conditioning:
+  pocket_str: "GLY GLN GLY TYR LEU VAL ASP THR GLY SER TYR THR GLN GLY TRP LYS PHE PHE ILE TRP GLY ILE LEU GLY ASP SER GLY THR THR ASN ARG VAL GLY ALA"
+  pocket_emb_path: "/LUSTRE/users/pvaras/sequence_gpt/data/very_big_molecules_selfies_2/cross_docked_jblasser/p_bace_per_residue.npy"
+  pocket_emb_mode: "cross"
+  pocket_emb_aa_start: 0
+
+# =========================
+# REWARD
+# =========================
+reward:
+  script: "multiaffinity_rga_2/reward_model_5.py"
+  vars_file: "multiaffinity_rga_2/vars_4.json"
+  output_prefix: "docking_results_3"
+  smiles_output_file: "generated_molecules_M.csv"
+  combiner: "docking_logp"
+
+# =========================
+# SYSTEM
+# =========================
+system:
+  train_device: "cuda:0"
+  ref_device: "cuda:1"
+  dtype: "bfloat16"
+
+# =========================
+# OUTPUT
+# =========================
+output:
+  ppo_ckpt_path: "out-models/ckpt_zink_chembl_cross_crossatt_bace.pt"
+  loss_history_file: "loss_history_M.txt"
+  save_trajectories: true

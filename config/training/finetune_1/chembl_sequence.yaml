@@ -52,6 +52,6 @@ logging:
 
 system:
   device: cuda
-  dtype: bfloat16
+  dtype: float16
   backend: nccl
   compile: false
