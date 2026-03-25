@@ -24,7 +24,7 @@ training:
   init_from: scratch
   init_ckpt_path: null
   target_tokens: 524288
-  num_gpus: 8
+  num_gpus: 4
   learning_rate: 3.0e-4
   min_lr: 1.0e-5
   weight_decay: 0.1
@@ -43,8 +43,8 @@ eval:
   always_save_checkpoint: false
 
 logging:
-  out_dir: out-very-big-molecules-selfies-2
-  checkpoint_name: ckpt_zink_M.pt
+  out_dir: experiments/pretrain
+  checkpoint_name: ckpt_zinc_M.pt
   log_interval: 50
   wandb_log: false
   wandb_project: molecules-gpt
