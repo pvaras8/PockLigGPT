@@ -41,7 +41,6 @@ nohup.out
 *.pth
 *.ckpt
 *.bin
-*.pkl
 *.joblib
 
 # =========================
