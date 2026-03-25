@@ -15,9 +15,9 @@ data:
   dataset: very_big_molecules_selfies_2
   block_size: 156
   batch_size: 32
-  meta_path: data/very_big_molecules_selfies_2/meta_chembl_db_aa_2_proto4.pkl
-  train_bin: data/very_big_molecules_selfies_2/train_1_ghs.bin
-  val_bin: data/very_big_molecules_selfies_2/val_1_ghs.bin
+  meta_path: datasets/tokenizer/meta_chembl_db_aa_2_proto4.pkl
+  train_bin: /LUSTRE/users/pvaras/nanoGPT/data/very_big_molecules_selfies_2/train_zink_aa.bin
+  val_bin: /LUSTRE/users/pvaras/nanoGPT/data/very_big_molecules_selfies_2/val_zink_aa.bin
   pad_token_id: 0
 
 training:
