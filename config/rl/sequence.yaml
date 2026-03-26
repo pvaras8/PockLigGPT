@@ -4,7 +4,7 @@
 model:
   type: "sequence"
   module: "pockliggpt.models.model_sequence"
-  checkpoint_path: "out-models/ckpt_zink_chembl_cross_sequence.pt"
+  checkpoint_path: "/LUSTRE/users/pvaras/sequence_gpt/out-models/ckpt_zink_chembl_cross_sequence.pt"
 
 # =========================
 # DATA
