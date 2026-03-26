@@ -185,10 +185,13 @@ class RewardRunner:
         self.cfg = cfg
         self.reward_cfg = cfg["reward"]
 
-        self.reward_script = os.path.abspath(self.reward_cfg["script"])
-        self.vars_file = os.path.abspath(self.reward_cfg["vars_file"])
+        script = self.reward_cfg.get("script", None)
+        vars_file = self.reward_cfg.get("vars_file", None)
+
+        self.reward_script = os.path.abspath(script) if script else None
+        self.vars_file = os.path.abspath(vars_file) if vars_file else None
         self.smiles_output_file = os.path.abspath(self.reward_cfg["smiles_output_file"])
-        self.output_prefix = self.reward_cfg["output_prefix"]
+        self.output_prefix = self.reward_cfg.get("output_prefix", "reward_results")
         self.combiner_name = self.reward_cfg["combiner"]
 
         if self.combiner_name not in COMBINERS:
