@@ -175,6 +175,8 @@ COMBINERS: Dict[str, Callable] = {
     "two_docking_specificity": combine_two_docking_specificity,
     "two_docking_specific_2": combine_two_docking_specific_2,
     "two_docking_specific_new": combine_two_docking_specific_new,
+     "mw_only": sigmoid_pen_reward,  # 👈 NUEVO
+
 }
 
 
@@ -224,6 +226,9 @@ class RewardRunner:
                 lambda row: self.combiner(row["Docking"], row["LogP"], row["MW"]),
                 axis=1,
             )
+        elif self.combiner_name == "mw_only":
+            df["MW"] = df["SMILES"].apply(calculate_weight)
+            df["Fitness"] = df["MW"].apply(self.combiner)
 
         else:
             raise NotImplementedError(
@@ -251,16 +256,21 @@ class RewardRunner:
         )
 
         try:
-            print(f"Llamando a {self.reward_script} para docking en época {epoch}...")
-            subprocess.run(
-                ["python", self.reward_script, self.smiles_output_file, self.vars_file, str(epoch)],
-                check=True,
-            )
+            if self.reward_script is not None:
+                print(f"Llamando a {self.reward_script} para docking en época {epoch}...")
+                subprocess.run(
+                    ["python", self.reward_script, self.smiles_output_file, self.vars_file, str(epoch)],
+                    check=True,
+                )
 
-            df_temp = pd.read_csv(docking_output_file_temp)
+                df_temp = pd.read_csv(docking_output_file_temp)
 
-            if "Docking" not in df_temp.columns:
-                raise ValueError("El CSV de docking no contiene columna 'Docking'.")
+                if "Docking" not in df_temp.columns:
+                    raise ValueError("El CSV de docking no contiene columna 'Docking'.")
+
+            else:
+                # 👇 caso sin script (ej: MW, LogP, etc.)
+                df_temp = pd.DataFrame({"SMILES": valid_molecules})
 
             df_temp = self._apply_combiner(df_temp)
 

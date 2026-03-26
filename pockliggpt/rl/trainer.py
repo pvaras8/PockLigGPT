@@ -22,7 +22,7 @@ def set_seed(seed: int = 42):
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
-    
+
 
 def load_tokenizer_meta_from_checkpoint(cfg) -> Tuple[Dict[str, int], Dict[int, str]]:
     meta_path = cfg.tokenizer.meta_path
@@ -217,7 +217,7 @@ def run_ppo_training(cfg, adapter):
     dtype = getattr(torch, dtype_name)
 
     ckpt_path = cfg["model"]["checkpoint_path"]
-    stoi, itos = load_tokenizer_meta_from_checkpoint(ckpt_path)
+    stoi, itos = load_tokenizer_meta_from_checkpoint(cfg)
 
     decode = lambda ids: "".join([itos.get(i, "") for i in ids if i in itos])
 
@@ -270,6 +270,13 @@ def run_ppo_training(cfg, adapter):
 
     ckpt_ppo_path = cfg["output"]["ppo_ckpt_path"]
     loss_history_file = cfg["output"]["loss_history_file"]
+    ckpt_dir = os.path.dirname(ckpt_ppo_path)
+    if ckpt_dir:
+        os.makedirs(ckpt_dir, exist_ok=True)
+
+    loss_dir = os.path.dirname(loss_history_file)
+    if loss_dir:
+        os.makedirs(loss_dir, exist_ok=True)
 
     all_scores = []
     best_score = -float("inf")
