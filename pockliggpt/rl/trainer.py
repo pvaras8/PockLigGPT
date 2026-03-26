@@ -22,16 +22,10 @@ def set_seed(seed: int = 42):
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
+    
 
-
-def load_tokenizer_meta_from_checkpoint(ckpt_path: str) -> Tuple[Dict[str, int], Dict[int, str]]:
-    checkpoint = torch.load(ckpt_path, map_location="cpu")
-
-    if "config" not in checkpoint or "dataset" not in checkpoint["config"]:
-        raise ValueError("El checkpoint no contiene checkpoint['config']['dataset'].")
-
-    dataset_name = checkpoint["config"]["dataset"]
-    meta_path = os.path.join("data", dataset_name, "meta_chembl_db_aa_2_proto4.pkl")
+def load_tokenizer_meta_from_checkpoint(cfg) -> Tuple[Dict[str, int], Dict[int, str]]:
+    meta_path = cfg.tokenizer.meta_path
 
     if not os.path.exists(meta_path):
         raise FileNotFoundError(f"No existe meta_path: {meta_path}")
