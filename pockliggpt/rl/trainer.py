@@ -98,17 +98,17 @@ class RolloutCreator:
             trajectories = model.generate(query_tensors, epoch=epoch)
             self._save_trajectories(trajectories, epoch)
 
-            attention_mask = trajectories.eq(self.stoi["<PAD>"]).to(self.train_device)
+            padding_mask = trajectories.eq(self.stoi["<PAD>"]).to(self.train_device)
 
             with torch.no_grad():
-                logits, values = model(trajectories, attention_mask=attention_mask)
+                logits, values = model(trajectories, padding_mask=padding_mask)
 
                 trajectories_ref = trajectories.to(self.ref_device)
-                attention_mask_ref = attention_mask.to(self.ref_device)
+                padding_mask_ref = padding_mask.to(self.ref_device)
 
                 ref_logits = self.ref_model(
                     trajectories_ref,
-                    attention_mask=attention_mask_ref,
+                    padding_mask=padding_mask_ref,
                 )
                 ref_logits = ref_logits.to(self.train_device)
 
@@ -119,7 +119,7 @@ class RolloutCreator:
             values = values[:, :-1]
 
             start = batch["input_ids"].shape[1] - 1
-            valid_mask = ~attention_mask[:, 1:]
+            valid_mask = ~padding_mask[:, 1:]
             valid_counts = valid_mask[:, start:].sum(1)
             ends = start + valid_counts
 
@@ -149,7 +149,6 @@ class RolloutCreator:
 
                 valid_indices.append(i)
 
-                # Alineado con logprobs[:, start:seq_end], que predicen trajectories[:, start+1:seq_end+1]
                 traj_response = trajectories[i, start + 1 : seq_end + 1].clone()
                 traj_values = values[i, start:seq_end].clone()
                 traj_logprobs = logprobs[i, start:seq_end].clone()
@@ -231,9 +230,9 @@ def compute_loss(cfg, batch, model: PPOAgent, stoi: Dict[str, int], device: str)
     advantages = normalize_advantages(advantages, mask)
 
     trajectories = torch.hstack([query_tensors, response_tensors])
-    attention_mask = trajectories.eq(stoi["<PAD>"])
+    padding_mask = trajectories.eq(stoi["<PAD>"])
 
-    logits, values_pred = model(trajectories, attention_mask=attention_mask)
+    logits, values_pred = model(trajectories, padding_mask=padding_mask)
     values_pred = values_pred[:, :-1]
     logprobs = logprobs_from_logits(logits[:, :-1, :], trajectories[:, 1:])
 

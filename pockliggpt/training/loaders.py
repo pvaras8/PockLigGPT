@@ -51,21 +51,21 @@ class SequenceLoader:
             for i in ix
         ])
 
-        attention_mask = (x == self.pad_token_id)
+        padding_mask = (x == self.pad_token_id)
 
         if self.device_type == "cuda":
             x = x.pin_memory().to(self.device, non_blocking=True)
             y = y.pin_memory().to(self.device, non_blocking=True)
-            attention_mask = attention_mask.pin_memory().to(self.device, non_blocking=True)
+            padding_mask = padding_mask.pin_memory().to(self.device, non_blocking=True)
         else:
             x = x.to(self.device)
             y = y.to(self.device)
-            attention_mask = attention_mask.to(self.device)
+            padding_mask = padding_mask.to(self.device)
 
         return {
             "idx": x,
             "targets": y,
-            "attention_mask": attention_mask,
+            "padding_mask": padding_mask,
         }
 
 
@@ -164,22 +164,22 @@ class SequenceAddLoader:
 
         x = torch.stack(x_list, dim=0)
         y = torch.stack(y_list, dim=0)
-        attention_mask = (x == self.pad_token_id)
+        padding_mask = (x == self.pad_token_id)
 
         if self.device_type == "cuda":
             x = x.pin_memory().to(self.device, non_blocking=True)
             y = y.pin_memory().to(self.device, non_blocking=True)
-            attention_mask = attention_mask.pin_memory().to(self.device, non_blocking=True)
+            padding_mask = padding_mask.pin_memory().to(self.device, non_blocking=True)
             pocket_emb_batch = pocket_emb_batch.pin_memory().to(self.device, non_blocking=True)
         else:
             x = x.to(self.device)
             y = y.to(self.device)
-            attention_mask = attention_mask.to(self.device)
+            padding_mask = padding_mask.to(self.device)
             pocket_emb_batch = pocket_emb_batch.to(self.device)
 
         return {
             "idx": x,
             "targets": y,
-            "attention_mask": attention_mask,
+            "padding_mask": padding_mask,
             "pocket_emb": pocket_emb_batch,
         }

@@ -121,13 +121,13 @@ class PPOAgent(nn.Module):
     def forward(
         self,
         input_ids: torch.Tensor,
-        attention_mask: Optional[torch.Tensor] = None,
+        padding_mask: Optional[torch.Tensor] = None,
     ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
         extra_kwargs = self._extra_model_kwargs(input_ids)
 
         lm_logits, last_hidden_state = self.model(
             input_ids,
-            attention_mask=attention_mask,
+            padding_mask=padding_mask,
             return_hidden_states=True,
             **extra_kwargs,
         )
