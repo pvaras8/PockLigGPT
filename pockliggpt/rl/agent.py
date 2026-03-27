@@ -24,9 +24,22 @@ class PPOAgent(nn.Module):
         self.dtype = dtype
 
         generation_cfg = cfg["generation"]
+
+        prefix_tokens = self.adapter.build_prompt_prefix(stoi)
+        initial_ligand_tokens = int(cfg["prompt"].get("initial_ligand_tokens", 7))
+
+        prompt_size = len(prefix_tokens) + 1 + initial_ligand_tokens
+        seq_length = int(generation_cfg["seq_length"])
+        max_new_tokens = seq_length - prompt_size
+
+        if max_new_tokens <= 0:
+            raise ValueError(
+                f"seq_length={seq_length} demasiado pequeño para prompt_size={prompt_size}"
+            )
+
         self.generate_kwargs = {
-            "seq_length": generation_cfg["seq_length"],
-            "max_new_tokens": generation_cfg["max_new_tokens"],
+            "seq_length": seq_length,
+            "max_new_tokens": max_new_tokens,
             "top_k": generation_cfg["top_k"],
             "temperature": generation_cfg["temperature"],
             "eos_token": stoi["<EOS>"],

@@ -14,7 +14,8 @@ data:
   smiles_column: "smiles"
 
 # =========================
-
+# TOKENIZER
+# =========================
 tokenizer:
   meta_path: "datasets/tokenizer/meta_chembl_db_aa_2_proto4.pkl"
 
@@ -24,7 +25,6 @@ tokenizer:
 rl:
   batch_size: 64
   lr: 3e-5
-  prompt_size: 50
   prompt_batch_size: 256
   num_rollouts: 256
   epochs: 30
@@ -41,7 +41,6 @@ rl:
 # =========================
 generation:
   seq_length: 156
-  max_new_tokens: 106
   top_k: 10
   temperature: 0.9
 
@@ -52,6 +51,7 @@ prompt:
   format: "pocket_ligand"
   include_pocket_tokens: true
   include_pocket_embedding: false
+  initial_ligand_tokens: 7
 
 # =========================
 # CONDITIONING

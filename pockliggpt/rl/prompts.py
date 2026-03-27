@@ -44,8 +44,10 @@ class PromptBuilder:
         self.cfg = cfg
         self.stoi = stoi
         self.adapter = adapter
-        self.prompt_size = int(cfg["rl"]["prompt_size"])
-
+        prefix_tokens = self.adapter.build_prompt_prefix(self.stoi)
+        self.initial_ligand_tokens = int(cfg["prompt"].get("initial_ligand_tokens", 7))
+        self.prompt_size = len(prefix_tokens) + 1 + self.initial_ligand_tokens
+        
     def build_prompt_tokens(self, smiles: str) -> Optional[List[int]]:
         smiles = smiles.strip()
         if not smiles:
