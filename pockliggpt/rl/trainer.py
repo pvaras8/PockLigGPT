@@ -14,7 +14,7 @@ from .agent import PPOAgent
 from .losses import gae, logprobs_from_logits, normalize_advantages, ppo_loss
 from .model_adapters import get_torch_dtype
 from .prompts import CustomPromptDataGenerator, PromptBuilder, PromptDataset, strip_to_ligand
-from .rewards import RewardRunner
+from pockliggpt.rewards import RewardRunner
 from .storage import PPORLElement, PPORolloutStorage
 
 

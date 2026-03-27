@@ -64,11 +64,11 @@ conditioning:
 # REWARD
 # =========================
 reward:
-  script: "multiaffinity_rga_2/reward_model_4.py"
-  vars_file: "multiaffinity_rga_2/vars_3.json"
-  output_prefix: "docking_results_2"
-  smiles_output_file: "generated_molecules_M.csv"
-  combiner: "docking_logp"
+  providers:
+    - rdkit_props
+
+  combiner: "mw_only"
+  results_output_prefix: "reward_results"
 
 # =========================
 # SYSTEM

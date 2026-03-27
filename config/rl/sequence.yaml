@@ -63,9 +63,11 @@ conditioning:
 # REWARD
 # =========================
 reward:
-  smiles_output_file: "generated_molecules_M.csv"
-  combiner: "mw_only"
+  providers:
+    - rdkit_props
 
+  combiner: "mw_only"
+  results_output_prefix: "reward_results"
 # =========================
 # SYSTEM
 # =========================
