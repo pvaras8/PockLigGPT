@@ -12,9 +12,11 @@ model:
 data:
   smiles_csv: "zink_250k.csv"
   smiles_column: "smiles"
-  
+
+# =========================
+
 tokenizer:
-  meta_path: datasets/tokenizer/meta_chembl_db_aa_2_proto4.pkl
+  meta_path: "datasets/tokenizer/meta_chembl_db_aa_2_proto4.pkl"
 
 # =========================
 # RL
@@ -61,6 +63,7 @@ conditioning:
 # REWARD
 # =========================
 reward:
+  smiles_output_file: "generated_molecules_M.csv"
   combiner: "mw_only"
 
 # =========================

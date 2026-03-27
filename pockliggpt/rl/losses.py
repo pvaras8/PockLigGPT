@@ -18,8 +18,16 @@ def gae(
     lam: float,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     advantages = torch.zeros_like(rewards, device=rewards.device)
-    last_advantage = 0.0
-    last_value = 0.0
+    last_advantage = torch.zeros(
+        rewards.shape[0],
+        device=rewards.device,
+        dtype=rewards.dtype,
+    )
+    last_value = torch.zeros(
+        values.shape[0],
+        device=values.device,
+        dtype=values.dtype,
+    )
 
     with torch.no_grad():
         for t in reversed(range(rewards.shape[1])):
@@ -34,12 +42,17 @@ def gae(
 
 
 def normalize_advantages(advantages: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
-    valid = advantages[mask.bool()]
+    valid_mask = mask.bool()
+    valid = advantages[valid_mask]
+
     if valid.numel() == 0:
-        return advantages
+        return torch.zeros_like(advantages)
+
     mean = valid.mean()
     std = valid.std(unbiased=False).clamp_min(1e-8)
-    return torch.where(mask.bool(), (advantages - mean) / std, advantages)
+    normalized = (advantages - mean) / std
+
+    return torch.where(valid_mask, normalized, torch.zeros_like(advantages))
 
 
 def ppo_loss(

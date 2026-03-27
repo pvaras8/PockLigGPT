@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
@@ -36,37 +36,56 @@ class PPOAgent(nn.Module):
         GPTConfig, GPT = self.adapter.load_model_classes()
 
         checkpoint = torch.load(model_checkpoint_path, map_location=device)
+        self._validate_checkpoint(checkpoint, model_checkpoint_path)
+
         gptconf = GPTConfig(**checkpoint["model_args"])
         self.model = GPT(gptconf).to(device=device, dtype=dtype)
 
-        state_dict = checkpoint["model"]
-        unwanted_prefix = "_orig_mod."
-        cleaned_state_dict = {}
-        for k, v in state_dict.items():
-            if k.startswith(unwanted_prefix):
-                k = k[len(unwanted_prefix) :]
-            cleaned_state_dict[k] = v
-
+        cleaned_state_dict = self._clean_state_dict(checkpoint["model"])
         self.model.load_state_dict(cleaned_state_dict, strict=False)
-
-        if not self.trainable:
-            self.model.eval()
-            self.model.requires_grad_(False)
-        else:
-            self.model.train()
-            self.model.requires_grad_(True)
-            self.adapter.maybe_freeze(self.model)
-
-            n_embd = self.model.config.n_embd
-            self.value_head = nn.Sequential(
-                nn.Linear(n_embd, 4 * n_embd),
-                nn.GELU(),
-                nn.Linear(4 * n_embd, 1),
-            ).to(device=device, dtype=dtype)
 
         self.logit_head = self.model.lm_head
         self.block_size = self.model.config.block_size
         self.n_embd = self.model.config.n_embd
+
+        if not self.trainable:
+            self.model.eval()
+            self.model.requires_grad_(False)
+            self.value_head = None
+        else:
+            self.model.train()
+            self.model.requires_grad_(True)
+            self.adapter.maybe_freeze(self.model)
+            self.value_head = self._build_value_head(self.n_embd, device, dtype)
+
+    @staticmethod
+    def _validate_checkpoint(checkpoint: dict, checkpoint_path: str) -> None:
+        required_keys = ["model_args", "model"]
+        for key in required_keys:
+            if key not in checkpoint:
+                raise KeyError(
+                    f"El checkpoint '{checkpoint_path}' no contiene la clave requerida '{key}'"
+                )
+
+    @staticmethod
+    def _clean_state_dict(state_dict: dict) -> dict:
+        unwanted_prefix = "_orig_mod."
+        cleaned_state_dict = {}
+
+        for key, value in state_dict.items():
+            if key.startswith(unwanted_prefix):
+                key = key[len(unwanted_prefix) :]
+            cleaned_state_dict[key] = value
+
+        return cleaned_state_dict
+
+    @staticmethod
+    def _build_value_head(n_embd: int, device: str, dtype: torch.dtype) -> nn.Module:
+        return nn.Sequential(
+            nn.Linear(n_embd, 4 * n_embd),
+            nn.GELU(),
+            nn.Linear(4 * n_embd, 1),
+        ).to(device=device, dtype=dtype)
 
     def _extra_model_kwargs(self, input_ids: torch.Tensor) -> dict:
         return self.adapter.build_model_kwargs(
@@ -89,8 +108,8 @@ class PPOAgent(nn.Module):
     def forward(
         self,
         input_ids: torch.Tensor,
-        attention_mask: torch.Tensor = None,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        attention_mask: Optional[torch.Tensor] = None,
+    ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
         extra_kwargs = self._extra_model_kwargs(input_ids)
 
         lm_logits, last_hidden_state = self.model(
@@ -100,9 +119,12 @@ class PPOAgent(nn.Module):
             **extra_kwargs,
         )
 
-        if self.trainable:
-            last_hidden_state = last_hidden_state.to(self.dtype)
-            value = self.value_head(last_hidden_state).squeeze(-1)
-            return lm_logits, value
+        if not self.trainable:
+            return lm_logits
 
-        return lm_logits
+        if self.value_head is None:
+            raise RuntimeError("value_head no está inicializado en modo trainable")
+
+        last_hidden_state = last_hidden_state.to(self.dtype)
+        value = self.value_head(last_hidden_state).squeeze(-1)
+        return lm_logits, value

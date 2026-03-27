@@ -15,6 +15,10 @@ data:
   smiles_column: "smiles"
 
 # =========================
+
+tokenizer:  
+  meta_path: "datasets/tokenizer/meta_chembl_db_aa_2_proto4.pkl"
+# =========================
 # RL
 # =========================
 rl:

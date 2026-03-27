@@ -48,6 +48,9 @@ class PromptBuilder:
 
     def build_prompt_tokens(self, smiles: str) -> Optional[List[int]]:
         smiles = smiles.strip()
+        if not smiles:
+            return None
+
         selfie = sf.encoder(smiles)
         if not selfie:
             return None
@@ -55,8 +58,18 @@ class PromptBuilder:
         selfie_tokens = split_selfies(selfie)
         prefix_tokens = self.adapter.build_prompt_prefix(self.stoi)
 
+        min_required = len(prefix_tokens) + 1  # +1 por <LIGAND>
+        if self.prompt_size < min_required:
+            raise ValueError(
+                f"prompt_size={self.prompt_size} demasiado pequeño para el prefijo "
+                f"(mínimo requerido: {min_required})"
+            )
+
+        if any(token not in self.stoi for token in selfie_tokens):
+            return None
+
         ligand_tokens = [self.stoi["<LIGAND>"]]
-        ligand_tokens.extend([self.stoi[token] for token in selfie_tokens if token in self.stoi])
+        ligand_tokens.extend([self.stoi[token] for token in selfie_tokens])
 
         tokens = prefix_tokens + ligand_tokens
 

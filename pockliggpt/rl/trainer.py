@@ -12,6 +12,7 @@ from tqdm.auto import tqdm
 
 from .agent import PPOAgent
 from .losses import gae, logprobs_from_logits, normalize_advantages, ppo_loss
+from .model_adapters import get_torch_dtype
 from .prompts import CustomPromptDataGenerator, PromptBuilder, PromptDataset, strip_to_ligand
 from .rewards import RewardRunner
 from .storage import PPORLElement, PPORolloutStorage
@@ -58,6 +59,13 @@ class RolloutCreator:
         self.kl_coef = float(cfg["rl"]["kl_coef"])
         self.save_trajectories = bool(cfg["output"].get("save_trajectories", False))
 
+        self.trajectories_dir = cfg["output"].get("trajectories_dir", None)
+        if self.trajectories_dir is None:
+            ppo_ckpt_path = cfg["output"]["ppo_ckpt_path"]
+            self.trajectories_dir = os.path.join(os.path.dirname(ppo_ckpt_path), "trajectories")
+
+        os.makedirs(self.trajectories_dir, exist_ok=True)
+
         self.prompt_dataset = prompt_dataset
         self.prompt_generator = CustomPromptDataGenerator(prompt_dataset, self.prompt_batch_size)
         self.prompt_iterator = iter(self.prompt_generator)
@@ -65,18 +73,24 @@ class RolloutCreator:
     def _save_trajectories(self, trajectories: torch.Tensor, epoch: int):
         if not self.save_trajectories:
             return
-        with open(f"trajectories_{epoch}.txt", "w") as f:
+
+        output_file = os.path.join(self.trajectories_dir, f"trajectories_{epoch}.txt")
+        with open(output_file, "w") as f:
             for traj in trajectories:
                 f.write(" ".join(map(str, traj.tolist())) + "\n")
 
     def make_experience(self, model: PPOAgent, epoch: int, num_rollouts: int):
         all_rollouts = []
+        all_scores = []
 
         while len(all_rollouts) < num_rollouts:
             try:
                 batch = next(self.prompt_iterator)
             except StopIteration:
-                self.prompt_generator = CustomPromptDataGenerator(self.prompt_dataset, self.prompt_batch_size)
+                self.prompt_generator = CustomPromptDataGenerator(
+                    self.prompt_dataset,
+                    self.prompt_batch_size,
+                )
                 self.prompt_iterator = iter(self.prompt_generator)
                 batch = next(self.prompt_iterator)
 
@@ -84,7 +98,6 @@ class RolloutCreator:
             trajectories = model.generate(query_tensors, epoch=epoch)
             self._save_trajectories(trajectories, epoch)
 
-            response_tensors = trajectories[:, query_tensors.shape[1] :]
             attention_mask = trajectories.eq(self.stoi["<PAD>"]).to(self.train_device)
 
             with torch.no_grad():
@@ -110,42 +123,87 @@ class RolloutCreator:
             valid_counts = valid_mask[:, start:].sum(1)
             ends = start + valid_counts
 
-            truncated_values = [values[i, start : ends[i]].clone() for i in range(n_trajectories)]
-            truncated_logprobs = [logprobs[i, start : ends[i]].clone() for i in range(n_trajectories)]
+            texts = [self.decode(seq.tolist()) for seq in trajectories]
+            texts = [strip_to_ligand(t) for t in texts]
+            scores = self.reward_runner(texts, epoch)
 
-            truncated_values_padded = pad_sequence(truncated_values, batch_first=True, padding_value=float("nan"))
+            if len(scores) != n_trajectories:
+                raise RuntimeError(
+                    f"RewardRunner devolvió {len(scores)} scores pero esperaba {n_trajectories}"
+                )
+
+            rewards = -self.kl_coef * (logprobs - ref_logprobs)
+
+            valid_indices = []
+            truncated_responses = []
+            truncated_values = []
+            truncated_logprobs = []
+            all_rewards = []
+
+            for i in range(n_trajectories):
+                seq_end = int(ends[i].item())
+                seq_len = seq_end - start
+
+                if seq_len <= 0:
+                    continue
+
+                valid_indices.append(i)
+
+                # Alineado con logprobs[:, start:seq_end], que predicen trajectories[:, start+1:seq_end+1]
+                traj_response = trajectories[i, start + 1 : seq_end + 1].clone()
+                traj_values = values[i, start:seq_end].clone()
+                traj_logprobs = logprobs[i, start:seq_end].clone()
+                traj_rewards = rewards[i, start:seq_end].clone()
+
+                traj_rewards[-1] += scores[i]
+
+                truncated_responses.append(traj_response)
+                truncated_values.append(traj_values)
+                truncated_logprobs.append(traj_logprobs)
+                all_rewards.append(traj_rewards)
+                all_scores.append(scores[i])
+
+            if len(valid_indices) == 0:
+                continue
+
+            truncated_responses_padded = pad_sequence(
+                truncated_responses,
+                batch_first=True,
+                padding_value=self.stoi["<PAD>"],
+            )
+            truncated_values_padded = pad_sequence(
+                truncated_values,
+                batch_first=True,
+                padding_value=float("nan"),
+            )
             truncated_logprobs_padded = pad_sequence(
                 truncated_logprobs,
                 batch_first=True,
                 padding_value=float("nan"),
             )
-
-            texts = [self.decode(seq.tolist()) for seq in trajectories]
-            texts = [strip_to_ligand(t) for t in texts]
-            scores = self.reward_runner(texts, epoch)
-
-            rewards = -self.kl_coef * (logprobs - ref_logprobs)
-            all_rewards = [rewards[i][start : ends[i]].clone() for i in range(n_trajectories)]
-
-            for i in range(n_trajectories):
-                all_rewards[i][-1] += scores[i]
-
-            all_rewards_padded = pad_sequence(all_rewards, batch_first=True, padding_value=float("nan"))
+            all_rewards_padded = pad_sequence(
+                all_rewards,
+                batch_first=True,
+                padding_value=float("nan"),
+            )
 
             new_rollouts = [
                 PPORLElement(
                     query_tensor=query_tensors[i].detach().cpu(),
-                    response_tensor=response_tensors[i].detach().cpu(),
-                    logprobs=truncated_logprobs_padded[i].detach().cpu(),
-                    values=truncated_values_padded[i].detach().cpu(),
-                    rewards=all_rewards_padded[i].detach().cpu(),
+                    response_tensor=truncated_responses_padded[j].detach().cpu(),
+                    logprobs=truncated_logprobs_padded[j].detach().cpu(),
+                    values=truncated_values_padded[j].detach().cpu(),
+                    rewards=all_rewards_padded[j].detach().cpu(),
                 )
-                for i in range(n_trajectories)
+                for j, i in enumerate(valid_indices)
             ]
             all_rollouts.extend(new_rollouts)
 
-        score = torch.tensor(scores).mean().detach().cpu().item()
-        return all_rollouts[:num_rollouts], score
+        rollouts_out = all_rollouts[:num_rollouts]
+        scores_out = all_scores[: len(rollouts_out)]
+        mean_score = float(np.mean(scores_out)) if len(scores_out) > 0 else 0.0
+
+        return rollouts_out, mean_score
 
 
 def compute_loss(cfg, batch, model: PPOAgent, stoi: Dict[str, int], device: str):
@@ -198,13 +256,19 @@ def compute_loss(cfg, batch, model: PPOAgent, stoi: Dict[str, int], device: str)
         vf_coef=float(cfg["rl"]["vf_coef"]),
     )
 
-    mean_last_reward = old_rewards[:, -1].nanmean().item()
+    lengths = mask.sum(dim=1).long().clamp_min(1)
+    last_idx = (lengths - 1).unsqueeze(1)
+    last_rewards = old_rewards_masked.gather(1, last_idx).squeeze(1)
+    mean_last_reward = last_rewards.mean().item()
+
     return loss, stats, mean_last_reward
 
 
 def save_loss_stats(loss_history_file: str, stats: dict):
     with open(loss_history_file, "a") as f:
-        f.write(f"{stats['loss']},{stats['pg_loss']},{stats['vf_loss']},{stats['pg_clipfrac']}\n")
+        f.write(
+            f"{stats['loss']},{stats['pg_loss']},{stats['vf_loss']},{stats['pg_clipfrac']}\n"
+        )
 
 
 def run_ppo_training(cfg, adapter):
@@ -214,7 +278,7 @@ def run_ppo_training(cfg, adapter):
     train_device = cfg["system"]["train_device"]
     ref_device = cfg["system"]["ref_device"]
     dtype_name = cfg["system"]["dtype"]
-    dtype = getattr(torch, dtype_name)
+    dtype = get_torch_dtype(dtype_name)
 
     ckpt_path = cfg["model"]["checkpoint_path"]
     stoi, itos = load_tokenizer_meta_from_checkpoint(cfg)
@@ -270,6 +334,7 @@ def run_ppo_training(cfg, adapter):
 
     ckpt_ppo_path = cfg["output"]["ppo_ckpt_path"]
     loss_history_file = cfg["output"]["loss_history_file"]
+
     ckpt_dir = os.path.dirname(ckpt_ppo_path)
     if ckpt_dir:
         os.makedirs(ckpt_dir, exist_ok=True)
@@ -297,9 +362,9 @@ def run_ppo_training(cfg, adapter):
                     stoi=stoi,
                     device=train_device,
                 )
+                opt.zero_grad(set_to_none=True)
                 loss.backward()
                 opt.step()
-                opt.zero_grad()
                 save_loss_stats(loss_history_file, stats)
                 tbar.update()
 

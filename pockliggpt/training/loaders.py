@@ -23,13 +23,18 @@ class SequenceLoader:
             return None
         with open(self.meta_path, "rb") as f:
             meta = pickle.load(f)
-        return meta["vocab_size"]
+        return meta.get("vocab_size")
 
     def get_batch(self, split: str):
         bin_path = self.train_bin if split == "train" else self.val_bin
         data = np.memmap(bin_path, dtype=np.uint16, mode="r")
 
         num_sequences = (len(data) - 1) // self.block_size
+        if num_sequences <= 0:
+            raise ValueError(
+                f"No hay suficientes tokens en {bin_path} para block_size={self.block_size}"
+            )
+
         ix = torch.randint(0, num_sequences, (self.batch_size,))
 
         x = torch.stack([
@@ -110,11 +115,16 @@ class SequenceAddLoader:
             return None
         with open(self.meta_path, "rb") as f:
             meta = pickle.load(f)
-        return meta["vocab_size"]
+        return meta.get("vocab_size")
 
     def get_batch(self, split: str):
         idx_pool = self.train_idx if split == "train" else self.val_idx
-        chosen = np.random.choice(idx_pool, size=self.batch_size, replace=False)
+
+        if len(idx_pool) == 0:
+            raise ValueError(f"No hay ejemplos en split='{split}'")
+
+        replace = len(idx_pool) < self.batch_size
+        chosen = np.random.choice(idx_pool, size=self.batch_size, replace=replace)
 
         x_list = []
         y_list = []
@@ -134,7 +144,11 @@ class SequenceAddLoader:
                 )
 
             x_seq = torch.from_numpy(tokens)
-            y_seq = torch.from_numpy(np.roll(tokens, -1))
+
+            y_tokens = np.empty_like(tokens)
+            y_tokens[:-1] = tokens[1:]
+            y_tokens[-1] = self.pad_token_id
+            y_seq = torch.from_numpy(y_tokens)
 
             x_list.append(x_seq)
             y_list.append(y_seq)
