@@ -10,7 +10,7 @@ def sigmoid_pen_docking(x, min_x=-12.0, max_x=-6.0, min_sig_in=-6, max_sig_in=6)
     return sig(input_map(x))
 
 
-def sigmoid_pen_reward(x, min_x=300.0, max_x=500, min_sig_in=-6, max_sig_in=6):
+def sigmoid_pen_weight(x, min_x=300.0, max_x=500, min_sig_in=-6, max_sig_in=6):
     sig = lambda y: 1 / (1 + exp(-y))
     input_map = lambda y: (y - min_x) / (max_x - min_x) * (max_sig_in - min_sig_in) + min_sig_in
     return sig(input_map(x))
@@ -44,5 +44,5 @@ def combine_docking_logP(docking, logp):
 COMBINERS: Dict[str, Callable] = {
     "docking_only": combine_docking_only,
     "docking_logp": combine_docking_logP,
-    "mw_only": sigmoid_pen_reward,
+    "mw_only": sigmoid_pen_weight,
 }
