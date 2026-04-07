@@ -11,6 +11,6 @@
   "vina_cpu_per_job": 1,
   "exhaustiveness": 8,
   "n_poses": 1,
-  "fallback_score": -6.0,
+  "fallback_score": -5.0,
   "save_every": 25
 }
