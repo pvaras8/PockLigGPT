@@ -57,17 +57,22 @@ prompt:
 # CONDITIONING
 # =========================
 conditioning:
-  pocket_str: "ASN ASP SER PHE GLY SER TRP ASN GLY GLY GLY PHE GLN THR GLY TYR GLU SER ALA TRP THR PRO LEU SER VAL GLU GLY THR ALA PHE LEU VAL TYR PHE TRP MET HIS GLY TYR"
+  pocket_str: "SER LEU ILE GLY LYS PHE GLN VAL VAL LYS VAL ALA ILE LYS VAL PHE GLU MET LEU SER TYR ASN LEU ASP PRO GLU ASN ILE LEU LEU LYS ILE VAL ASP"
 
 # =========================
 # REWARD
 # =========================
 reward:
   providers:
-    - rdkit_props
+    - docking
 
-  combiner: "mw_only"
-  results_output_prefix: "reward_results"
+  docking:
+    script: "scripts/reward_vina.py"
+    vars_file: "vars_reward.json"
+    smiles_output_file: "smiles_output.smi"
+
+  combiner: "docking_only"
+  results_output_prefix: "reward_results_docking"
 # =========================
 # SYSTEM
 # =========================

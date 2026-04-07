@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 import subprocess
 from typing import List
 
@@ -26,12 +27,19 @@ class DockingProvider(RewardProvider):
         self.suffix = self.provider_cfg.get("suffix", None)
 
     def _write_smiles_file(self, smiles_list: List[str]) -> None:
+        os.makedirs(os.path.dirname(self.smiles_output_file), exist_ok=True)
         with open(self.smiles_output_file, "w") as f:
             for smi in smiles_list:
                 f.write(smi + "\n")
 
     def _get_output_file(self, epoch: int) -> str:
-        base_dir = os.path.dirname(self.smiles_output_file)
+        with open(self.vars_file, "r") as f:
+            vars_cfg = json.load(f)
+
+        base_dir = os.path.abspath(
+            vars_cfg.get("final_folder", os.path.dirname(self.smiles_output_file))
+        )
+
         if self.suffix is None:
             return os.path.join(base_dir, f"{self.output_prefix}_{epoch}_temp.csv")
         return os.path.join(base_dir, f"{self.output_prefix}_{self.suffix}_{epoch}_temp.csv")
