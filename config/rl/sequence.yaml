@@ -67,8 +67,8 @@ reward:
     - docking
 
   docking:
-    script: "scripts/reward_vina.py"
-    vars_file: "vars_reward.json"
+    script: "scripts/reward_mgltools_vina.py"
+    vars_file: "vars_mgltools.json"
     smiles_output_file: "smiles_output.smi"
 
   combiner: "docking_only"
