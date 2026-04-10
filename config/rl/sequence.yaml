@@ -10,12 +10,9 @@ model:
 # DATA
 # =========================
 data:
-  smiles_csv: "zink_250k.csv"
+  smiles_csv: "datasets/raw/zinc250k/zinc_250k.csv"
   smiles_column: "smiles"
 
-# =========================
-# TOKENIZER
-# =========================
 tokenizer:
   meta_path: "datasets/tokenizer/meta_chembl_db_aa_2_proto4.pkl"
 
@@ -68,7 +65,7 @@ reward:
 
   docking:
     script: "scripts/reward_mgltools_vina.py"
-    vars_file: "vars_mgltools.json"
+    vars_file: "config/docking/vars_mgltools.json"
     smiles_output_file: "smiles_output.smi"
 
   combiner: "docking_only"

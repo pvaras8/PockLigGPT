@@ -11,12 +11,10 @@ model:
 # DATA
 # =========================
 data:
-  smiles_csv: "zink_250k.csv"
+  smiles_csv: "datasets/raw/zinc250k/zinc_250k.csv"
   smiles_column: "smiles"
 
-# =========================
-
-tokenizer:  
+tokenizer:
   meta_path: "datasets/tokenizer/meta_chembl_db_aa_2_proto4.pkl"
 # =========================
 # RL
