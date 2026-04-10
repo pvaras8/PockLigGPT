@@ -5,12 +5,12 @@ set -e
 echo "⬇️ Downloading docking_vina..."
 
 FILE_ID="1B7270Q4yG00TuJztwveHcLo9Mr6WaLU5"
-URL="https://drive.google.com/uc?export=download&id=${FILE_ID}"
 
-wget --no-check-certificate "$URL" -O docking_vina.zip
+pip install -q gdown
+gdown $FILE_ID -O docking_vina.zip
 
 echo "📦 Unzipping..."
-unzip docking_vina.zip
+unzip -q docking_vina.zip
 rm docking_vina.zip
 
 echo "✅ docking_vina ready"
