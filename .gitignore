@@ -130,3 +130,8 @@ dist/
 htmlcov/
 
 docking_vina/
+
+*.smi
+
+experiments/rl/docking/
+
