@@ -4,15 +4,15 @@ PockLigGPT is a pocket-conditioned molecular generation framework based on GPT a
 
 It supports multiple workflows:
 
-1. **Reproduce training** (pretraining + finetuning) from tokenized datasets.
-2. **Use pretrained checkpoints** (e.g., from Hugging Face) and run RL.
-3. **Condition RL with a real pocket** using sequence + ProtT5 embeddings (`.npy`) + receptor + docking coordinates.
+1. **Reproduce training** (pretraining + finetuning) from tokenized datasets
+2. **Use pretrained checkpoints** (e.g. from Hugging Face) and run RL
+3. **Condition RL with a real pocket** using sequence + ProtT5 embeddings (`.npy`) + receptor + docking coordinates
 
 ---
 
-## Installation
+## 🚀 Installation
 
-### Option A: `pip` (recommended for users)
+### Option A: pip (recommended)
 
 ```bash
 python3 -m venv .venv
@@ -21,7 +21,7 @@ python -m pip install --upgrade pip
 pip install -e .
 ```
 
-### Option B: `conda` (includes notebook tooling)
+### Option B: conda
 
 ```bash
 conda env create -f environment.yml
@@ -29,7 +29,7 @@ conda activate pockliggpt
 python -m pip install -e .
 ```
 
-Quick sanity check:
+### Sanity check
 
 ```bash
 python -c "import pockliggpt; print(pockliggpt.__version__)"
@@ -37,32 +37,33 @@ python -c "import pockliggpt; print(pockliggpt.__version__)"
 
 ---
 
-## Repository workflow (end-to-end)
+## ⚡ Quickstart (minimal)
 
-### 1) Prepare datasets
-
-Raw data is **not included** in the repo due to size.
-
-- See `datasets/README.md`
-- Put your source files under `datasets/raw/...`
-
-Typical sources used in this project:
-
-- ChEMBL
-- ZINC20
-- CrossDocked
+```bash
+pip install -e .
+python scripts/train_ppo.py --config config/rl/sequence_add.yaml
+```
 
 ---
 
-### 2) Tokenize datasets with the provided tokenizer + dictionary
+## 📂 Workflow (end-to-end)
 
-Tokenization is done with `scripts/tokenize_dataset.py` and YAML configs in `config/tokenization/`.
+### 1) Prepare datasets
 
-Use the provided tokenizer dictionary (meta file):
+Datasets are **not included**.
 
-- `datasets/tokenizer/meta_chembl_db_aa_2_proto4.pkl`
+* See `datasets/README.md`
+* Place raw data under `datasets/raw/...`
 
-Run tokenization:
+Typical datasets:
+
+* ChEMBL
+* ZINC20
+* CrossDocked
+
+---
+
+### 2) Tokenization
 
 ```bash
 python scripts/tokenize_dataset.py --config config/tokenization/chembl.yaml
@@ -70,25 +71,21 @@ python scripts/tokenize_dataset.py --config config/tokenization/zinc20.yaml
 python scripts/tokenize_dataset.py --config config/tokenization/crossdocked.yaml
 ```
 
-This generates tokenized `.bin` files in `datasets/processed/...` (according to each config).
+Outputs:
 
-> Important: update input paths inside each YAML (`dataset.files` / `dataset.file`) to match your local machine.
+* `datasets/processed/*.bin`
+
+> Update dataset paths inside YAML configs.
+
+Tokenizer metadata (`meta_*.pkl`) must be placed in:
+
+```bash
+datasets/tokenizer/
+```
 
 ---
 
-### 3) Reproduce training (pretrain / finetune)
-
-Training entrypoint:
-
-- `scripts/train.py`
-
-Config families:
-
-- Pretrain: `config/training/pretrain/`
-- Finetune stage 1: `config/training/finetune_1/`
-- Finetune stage 2: `config/training/finetune_2/`
-
-Examples:
+### 3) Training
 
 ```bash
 python scripts/train.py --config config/training/pretrain/zinc_20_sequence.yaml
@@ -96,98 +93,136 @@ python scripts/train.py --config config/training/finetune_1/chembl_sequence.yaml
 python scripts/train.py --config config/training/finetune_2/crossdocked_sequence.yaml
 ```
 
-If using multi-GPU DDP, launch with `torchrun` and set `num_gpus`/devices in your config and environment.
+Supports multi-GPU via `torchrun`.
 
 ---
 
-### 4) Use pretrained checkpoints from Hugging Face (instead of full retraining)
-
-You can skip long training by downloading released checkpoints and pointing your configs to them.
+### 4) Use pretrained checkpoints
 
 ```bash
-python -m huggingface_hub download <HF_USER_OR_ORG>/<HF_REPO> \
-	--repo-type model \
-	--local-dir checkpoints/pockliggpt
+python -m huggingface_hub download <HF_USER>/<HF_REPO> \
+  --repo-type model \
+  --local-dir checkpoints/pockliggpt
 ```
 
-Then set:
+Then set in configs:
 
-- `model.checkpoint_path` in `config/rl/*.yaml`
-- `training.init_ckpt_path` (if resuming finetuning)
+* `model.checkpoint_path`
+* `training.init_ckpt_path`
 
 ---
 
-### 5) RL with pocket conditioning (sequence + `.npy` + receptor + coordinates)
-
-RL entrypoint:
+### 5) RL with pocket conditioning
 
 ```bash
 python scripts/train_ppo.py --config config/rl/sequence_add.yaml
 ```
 
-Alternative model configs:
-
-- `config/rl/sequence.yaml`
-- `config/rl/sequence_add.yaml`
-- `config/rl/cross.yaml`
-
-#### Step A — get pocket sequence and `.npy` from notebook
+#### A) Extract pocket embeddings
 
 Use:
 
-- `notebooks/prott5_pocket_pipeline_simple_en.ipynb`
+```bash
+notebooks/prott5_pocket_pipeline_simple_en.ipynb
+```
 
-From the notebook, export:
+Outputs:
 
-1. Pocket amino-acid sequence (space-separated, e.g. `ALA GLY ...`)
-2. ProtT5 residue embeddings `.npy`
-
-#### Step B — update RL config
-
-In your selected `config/rl/*.yaml`, set:
-
-- `conditioning.pocket_str` → your pocket sequence
-- `conditioning.pocket_emb_path` → path to your `.npy`
-- `model.checkpoint_path` → local checkpoint (trained or downloaded)
-- `tokenizer.meta_path` → tokenizer dictionary path
-
-#### Step C — set docking receptor and box coordinates
-
-For docking-based reward, edit one vars file:
-
-- `config/docking/vars_mgltools.json` (MGLTools pipeline), or
-- `config/docking/vars_meeko.json` (Meeko/Vina pipeline)
-
-At minimum define:
-
-- receptor file path (`filename_of_receptor`)
-- docking center (`center_x`, `center_y`, `center_z`)
-- box size (`size_x`, `size_y`, `size_z`)
-
-Then run PPO and the RL loop will generate molecules and optimize rewards automatically.
+* pocket sequence
+* `.npy` embeddings
 
 ---
 
-## Minimal checklist before running
+#### B) Configure RL
 
-- Dataset files downloaded and paths fixed in YAML
-- Tokenizer `meta_chembl_db_aa_2_proto4.pkl` available
-- RL config filled with sequence + `.npy`
-- Docking vars JSON filled with receptor + coordinates
-- Checkpoint path valid (local training output or Hugging Face download)
+Set in YAML:
 
----
-
-## Project highlights
-
-- Pocket-conditioned generation
-- SELFIES representation
-- Multiple model adapters (`sequence`, `sequence_add`, `cross`)
-- PPO-based RL training
-- Docking reward integration
+* `conditioning.pocket_str`
+* `conditioning.pocket_emb_path`
+* `model.checkpoint_path`
+* `tokenizer.meta_path`
 
 ---
 
-## Citation
+#### C) Configure docking
 
-If you use this code in your research, please cite the associated paper (to be added).
+Edit:
+
+```bash
+config/docking/vars_meeko.json
+# or
+config/docking/vars_mgltools.json
+```
+
+Required:
+
+* receptor path
+* center_x / center_y / center_z
+* size_x / size_y / size_z
+
+---
+
+## ✅ Minimal checklist
+
+* datasets in place
+* tokenizer `.pkl` available
+* `.npy` embeddings generated
+* checkpoint path valid
+* docking config filled
+
+---
+
+## 🧠 Features
+
+* Pocket-conditioned generation
+* SELFIES molecular representation
+* GPT-based autoregressive modeling
+* PPO reinforcement learning
+* Docking-based reward
+* ProtT5 protein embeddings
+
+---
+
+## 📁 Project structure
+
+```bash
+config/
+datasets/
+pockliggpt/
+scripts/
+notebooks/
+tests/
+```
+
+---
+
+## 🔗 External dependencies
+
+This project relies on external tools:
+
+* AutoDock Vina
+* Meeko
+* AutoGrow
+
+These are **not included** and must be installed separately.
+
+Users must comply with their respective licenses.
+
+---
+
+## ⚠️ Status
+
+Actively developed.
+Stable for inference and RL workflows.
+
+---
+
+## 📜 License
+
+MIT License
+
+---
+
+## 📖 Citation
+
+
