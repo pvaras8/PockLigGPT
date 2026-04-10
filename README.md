@@ -146,13 +146,9 @@ Set in YAML:
 
 #### C) Configure docking
 
-Edit:
+Edit this file:
 
-```bash
-config/docking/vars_meeko.json
-# or
-config/docking/vars_mgltools.json
-```
+- `config/docking/vars_mgltools.json` (AutoGrow + MGLTools + Vina pipeline)
 
 Required:
 
@@ -201,12 +197,47 @@ tests/
 This project relies on external tools:
 
 * AutoDock Vina
-* Meeko
 * AutoGrow
+* MGLTools
 
 These are **not included** and must be installed separately.
 
 Users must comply with their respective licenses.
+
+### Setup required: MGLTools + AutoGrow + Vina
+
+`scripts/reward_mgltools_vina.py` uses AutoGrow internals and requires MGLTools paths.
+
+1. Install Vina and Open Babel (`autodock-vina`, `openbabel`).
+2. Download and install MGLTools:
+
+```bash
+download mgltools
+
+download mgltools. then install mgltools
+
+tar -zxvf xxx.tar.gz
+cd mgltools_x86_64Linux2_1.5.6
+./install.sh
+cd ..
+```
+
+3. Update `config/docking/vars_mgltools.json`:
+  - `prepare_ligand4.py`
+  - `prepare_receptor4.py`
+  - `mgl_python`
+  - `mgltools_directory`
+  - receptor and docking box coordinates
+
+### Do I need to download `docking_vina`?
+
+Yes. You need the `docking_vina/` folder provided by the project maintainer (admin permissions required).
+
+That folder includes:
+
+- `docking_vina/autogrow/`
+
+So make sure `docking_vina` is present in your project before running RL with docking reward.
 
 ---
 
