@@ -28,6 +28,12 @@ conda activate pockliggpt
 pip install -e .
 ```
 
+### Sanity check
+
+```bash
+python -c "import pockliggpt; print(pockliggpt.__version__)"
+```
+
 ---
 
 ## ⚡ Quickstart
@@ -52,10 +58,9 @@ datasets/raw/
 ```
 
 Typical datasets:
-
-* ChEMBL
-* ZINC20
-* CrossDocked
+- ChEMBL
+- ZINC20
+- CrossDocked
 
 ---
 
@@ -63,6 +68,8 @@ Typical datasets:
 
 ```bash
 python scripts/tokenize_dataset.py --config config/tokenization/chembl.yaml
+python scripts/tokenize_dataset.py --config config/tokenization/zinc20.yaml
+python scripts/tokenize_dataset.py --config config/tokenization/crossdocked.yaml
 ```
 
 Outputs:
@@ -71,29 +78,43 @@ Outputs:
 datasets/processed/*.bin
 ```
 
+Tokenizer metadata (`meta_*.pkl`) should be placed in:
+
+```bash
+datasets/tokenizer/
+```
+
+> Update dataset paths inside YAML configs to match your local machine.
+
 ---
 
 ### 3) Training
 
 ```bash
 python scripts/train.py --config config/training/pretrain/zinc_20_sequence.yaml
+python scripts/train.py --config config/training/finetune_1/chembl_sequence.yaml
+python scripts/train.py --config config/training/finetune_2/crossdocked_sequence.yaml
 ```
+
+Supports multi-GPU via `torchrun`.
 
 ---
 
 ### 4) Pretrained checkpoints
 
-Download from Hugging Face:
+Download released checkpoints from Hugging Face:
 
 👉 https://huggingface.co/pablovp8/pockliggpt-models
 
-Or:
+Or with:
 
 ```bash
 python -m huggingface_hub download pablovp8/pockliggpt-models \
   --repo-type model \
   --local-dir checkpoints/pockliggpt
 ```
+
+Then set the checkpoint path in your config files.
 
 ---
 
@@ -102,6 +123,11 @@ python -m huggingface_hub download pablovp8/pockliggpt-models \
 ```bash
 python scripts/train_ppo.py --config config/rl/sequence_add.yaml
 ```
+
+Alternative configs:
+- `config/rl/sequence.yaml`
+- `config/rl/sequence_add.yaml`
+- `config/rl/cross.yaml`
 
 ---
 
@@ -113,10 +139,11 @@ Use:
 notebooks/prott5_pocket_pipeline_simple_en.ipynb
 ```
 
-Outputs:
+This notebook exports:
+- pocket amino-acid sequence
+- ProtT5 residue embeddings (`.npy`)
 
-* pocket sequence
-* `.npy` embeddings
+These outputs are required for pocket-conditioned RL.
 
 ---
 
@@ -124,38 +151,47 @@ Outputs:
 
 Docking is required for RL reward.
 
-### Automatic setup (recommended)
+### Automatic download of `docking_vina`
 
 ```bash
 bash scripts/setup_docking.sh
 ```
 
-This will:
+This downloads and unpacks the prepared `docking_vina/` folder used by the project.
 
-* download `docking_vina`
-* setup AutoGrow structure
-* guide MGLTools installation
+### What is included in `docking_vina`?
 
----
+The downloaded `docking_vina/` bundle contains the prepared docking workflow used in this project, including the required AutoGrow-related files and folder structure.
 
-### Manual setup
+### MGLTools installation
 
-1. Install:
+MGLTools must still be installed **manually** and **outside the repository**.
 
-* AutoDock Vina
-* Open Babel
-
-2. Download MGLTools:
+Download MGLTools from:
 
 👉 https://ccsb.scripps.edu/mgltools/
 
+Then install it, for example:
+
 ```bash
 tar -zxvf mgltools_*.tar.gz
-cd mgltools_*
+cd mgltools_x86_64Linux2_1.5.6
 ./install.sh
+cd ..
 ```
 
----
+This is typically installed in a user directory, for example on HPC systems:
+
+```bash
+/LUSTRE/users/<user>/
+```
+
+### Other required tools
+
+The docking workflow also requires:
+- Open Babel
+
+Install it separately in your system or conda environment.
 
 ### Configure docking
 
@@ -165,12 +201,29 @@ Edit:
 config/docking/vars_mgltools.json
 ```
 
-Set:
+Set at least:
+- receptor path
+- `center_x`, `center_y`, `center_z`
+- `size_x`, `size_y`, `size_z`
+- MGLTools paths:
+  - `prepare_ligand4.py`
+  - `prepare_receptor4.py`
+  - `mgl_python`
+  - `mgltools_directory`
 
-* receptor path
-* center_x, center_y, center_z
-* size_x, size_y, size_z
-* MGLTools paths
+---
+
+## ✅ Minimal checklist
+
+Before running RL with docking reward, make sure that:
+
+- datasets are in place
+- tokenizer `.pkl` is available
+- `.npy` embeddings are generated
+- checkpoint path is valid
+- `docking_vina/` has been downloaded
+- MGLTools is installed outside the repo
+- docking config is filled correctly
 
 ---
 
@@ -189,17 +242,19 @@ tests/
 
 ## 🔗 External dependencies
 
-* AutoDock Vina
-* AutoGrow
-* MGLTools
+This project relies on external tools:
+- MGLTools
+- Open Babel
 
-These are **not included** and must be installed separately.
+These must be installed separately.
+
+Users must comply with their respective licenses.
 
 ---
 
 ## ⚠️ Status
 
-Actively developed.
+Actively developed.  
 Stable for inference and RL workflows.
 
 ---
@@ -207,5 +262,3 @@ Stable for inference and RL workflows.
 ## 📜 License
 
 MIT License
-
----
