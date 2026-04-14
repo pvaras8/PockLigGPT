@@ -2,11 +2,21 @@
 
 PockLigGPT is a pocket-conditioned molecular generation framework based on GPT architectures and reinforcement learning (RL) for structure-based drug design.
 
+## 🌐 Online access
+
+PockLigGPT is also available through a research collaboration interface:
+
+👉 https://pockliggpt.streamlit.app
+
+Researchers and industry partners can submit target proteins (PDB) and project descriptions to request molecule generation or full computational studies.
+
+---
+
 It supports multiple workflows:
 
-1. **Reproduce training** (pretraining + finetuning) from tokenized datasets
-2. **Use pretrained checkpoints** and run RL
-3. **Condition RL with a real pocket** using sequence + ProtT5 embeddings (`.npy`) + receptor + docking coordinates
+1. **Reproduce training** (pretraining + finetuning) from tokenized datasets  
+2. **Use pretrained checkpoints** and run RL  
+3. **Condition RL with a real pocket** using sequence + ProtT5 embeddings (`.npy`) + receptor + docking coordinates  
 
 ---
 
@@ -100,7 +110,7 @@ Supports multi-GPU via `torchrun`.
 
 ---
 
-### 4) Pretrained checkpoints
+<!-- ### 4) Pretrained checkpoints
 
 Download released checkpoints from Hugging Face:
 
@@ -114,11 +124,11 @@ python -m huggingface_hub download pablovp8/pockliggpt-models \
   --local-dir checkpoints/pockliggpt
 ```
 
-Then set the checkpoint path in your config files.
+Then set the checkpoint path in your config files. -->
 
 ---
 
-### 5) RL with pocket conditioning
+### 4) RL with pocket conditioning
 
 ```bash
 python scripts/train_ppo.py --config config/rl/sequence_add.yaml
