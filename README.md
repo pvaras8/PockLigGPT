@@ -60,13 +60,31 @@ python scripts/train_ppo.py --config config/rl/sequence_add.yaml
 
 datasets/raw/
 
+Typical datasets: - ChEMBL\
+- ZINC20\
+- CrossDocked
+
+------------------------------------------------------------------------
+
 ### 2) Tokenization
 
-python scripts/tokenize_dataset.py --config ...
+``` bash
+python scripts/tokenize_dataset.py --config config/tokenization/chembl.yaml
+python scripts/tokenize_dataset.py --config config/tokenization/zinc20.yaml
+python scripts/tokenize_dataset.py --config config/tokenization/crossdocked.yaml
+```
+
+------------------------------------------------------------------------
 
 ### 3) Training
 
-python scripts/train.py --config ...
+``` bash
+python scripts/train.py --config config/training/pretrain/zinc_20_sequence.yaml
+python scripts/train.py --config config/training/finetune_1/chembl_sequence.yaml
+python scripts/train.py --config config/training/finetune_2/crossdocked_sequence.yaml
+```
+
+------------------------------------------------------------------------
 
 ### 4) Pretrained checkpoints
 
@@ -76,7 +94,9 @@ python -m huggingface_hub download pablovp8/PockLigGPT \
   --local-dir checkpoints/pockliggpt
 ```
 
-### 5) RL
+------------------------------------------------------------------------
+
+### 5) RL with pocket conditioning
 
 ``` bash
 python scripts/train_ppo.py --config config/rl/sequence_add.yaml
@@ -86,110 +106,37 @@ python scripts/train_ppo.py --config config/rl/sequence_add.yaml
 
 ## 🧬 Pocket Embeddings
 
-To condition generation on protein structure, pocket embeddings are
-required.
-
 Use:
 
 ``` bash
 notebooks/prott5_pocket_pipeline_simple_en.ipynb
 ```
 
-This pipeline generates: - pocket amino-acid sequence\
+This generates: - pocket amino-acid sequence\
 - ProtT5 residue embeddings (`.npy`)
-
-These are required inputs for pocket-conditioned RL.
 
 ------------------------------------------------------------------------
 
 ## ⚙️ Docking Setup
 
-Docking is used as the reward signal during RL optimization.
-
-### 1) Download docking pipeline
-
 ``` bash
 bash scripts/setup_docking.sh
 ```
 
-This downloads the `docking_vina/` folder containing the prepared
-docking workflow.
+Requires MGLTools.
 
 ------------------------------------------------------------------------
 
-### 2) Install MGLTools
+## ⚡ Compute Requirements
 
-Download from:
-
-👉 https://ccsb.scripps.edu/mgltools/
-
-Example:
-
-``` bash
-tar -zxvf mgltools_*.tar.gz
-cd mgltools_x86_64Linux2_1.5.6
-./install.sh
-cd ..
-```
-
-Typical HPC path:
-
-    /LUSTRE/users/<user>/
+-   Pretraining / finetuning: 4 GPUs\
+-   Reinforcement Learning: 2 GPUs
 
 ------------------------------------------------------------------------
 
-### 3) Configure docking
+## 💼 Contact
 
-Edit:
-
-``` bash
-config/docking/vars_mgltools.json
-```
-
-Set: - receptor path\
-- center_x, center_y, center_z\
-- size_x, size_y, size_z\
-- MGLTools paths
-
-------------------------------------------------------------------------
-
-## ✅ Minimal Checklist
-
-Before running RL:
-
--   datasets ready\
--   tokenizer `.pkl` available\
--   ProtT5 embeddings generated\
--   checkpoint path valid\
--   `docking_vina/` downloaded\
--   MGLTools installed\
--   docking config completed
-
-------------------------------------------------------------------------
-
-## 📁 Project Structure
-
-``` bash
-config/
-datasets/
-pockliggpt/
-scripts/
-notebooks/
-tests/
-```
-
-------------------------------------------------------------------------
-
-## 🔗 External Dependencies
-
--   MGLTools (ligand and receptor preparation for docking)
-
-------------------------------------------------------------------------
-
-## ⚠️ Status
-
-Actively developed.\
-Stable for inference and RL workflows.
+👉 https://pockliggpt.streamlit.app
 
 ------------------------------------------------------------------------
 
