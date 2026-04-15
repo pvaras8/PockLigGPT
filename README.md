@@ -1,10 +1,8 @@
 # PockLigGPT
 
-PockLigGPT is a pocket-conditioned molecular generation framework based
-on GPT architectures and reinforcement learning (RL) for structure-based
-drug design.
+PockLigGPT is a pocket-conditioned molecular generation framework based on GPT architectures and reinforcement learning (RL) for structure-based drug design.
 
-------------------------------------------------------------------------
+---
 
 ## 🌐 Online access
 
@@ -12,11 +10,9 @@ PockLigGPT is also available through a research collaboration interface:
 
 👉 https://pockliggpt.streamlit.app
 
-Researchers and industry partners can submit target proteins (PDB) and
-project descriptions to request molecule generation or full
-computational studies.
+Researchers and industry partners can submit target proteins (PDB) and project descriptions to request molecule generation or full computational studies.
 
-------------------------------------------------------------------------
+---
 
 ## 🔗 Model Weights
 
@@ -26,33 +22,25 @@ Download released checkpoints from Hugging Face:
 
 Pretrained and fine-tuned checkpoints are provided for direct use.
 
-------------------------------------------------------------------------
-
-PockLigGPT supports multiple workflows:
-
-1.  Reproduce training (pretraining + finetuning)\
-2.  Use pretrained checkpoints and run RL\
-3.  Condition RL with real pocket inputs
-
-------------------------------------------------------------------------
+---
 
 ## 🚀 Installation
 
-``` bash
+```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
 ```
 
-------------------------------------------------------------------------
+---
 
 ## ⚡ Quickstart
 
-``` bash
+```bash
 python scripts/train_ppo.py --config config/rl/sequence_add.yaml
 ```
 
-------------------------------------------------------------------------
+---
 
 ## 📂 Workflow
 
@@ -73,97 +61,77 @@ Typical datasets:
 
 ---
 
-------------------------------------------------------------------------
-
 ### 2) Tokenization
 
-``` bash
+```bash
 python scripts/tokenize_dataset.py --config config/tokenization/chembl.yaml
 python scripts/tokenize_dataset.py --config config/tokenization/zinc20.yaml
 python scripts/tokenize_dataset.py --config config/tokenization/crossdocked.yaml
 ```
 
-------------------------------------------------------------------------
+---
 
 ### 3) Training
 
-``` bash
+```bash
 python scripts/train.py --config config/training/pretrain/zinc_20_sequence.yaml
 python scripts/train.py --config config/training/finetune_1/chembl_sequence.yaml
 python scripts/train.py --config config/training/finetune_2/crossdocked_sequence.yaml
 ```
 
-------------------------------------------------------------------------
+---
 
 ### 4) Pretrained checkpoints
 
-``` bash
+```bash
 python -m huggingface_hub download pablovp8/PockLigGPT \
   --repo-type model \
   --local-dir checkpoints/pockliggpt
 ```
 
-------------------------------------------------------------------------
+---
 
 ### 5) RL with pocket conditioning
 
-``` bash
+```bash
 python scripts/train_ppo.py --config config/rl/sequence_add.yaml
 ```
 
-------------------------------------------------------------------------
+---
 
 ## 🧬 Pocket Embeddings
 
 Use:
 
-``` bash
+```bash
 notebooks/prott5_pocket_pipeline_simple_en.ipynb
 ```
 
-This generates: - pocket amino-acid sequence\
-- ProtT5 residue embeddings (`.npy`)
+This generates:
+- pocket amino-acid sequence
+- ProtT5 residue embeddings (.npy)
 
-------------------------------------------------------------------------
+---
 
 ## ⚙️ Docking setup
 
-Docking is required for RL reward.
-
-### Automatic download of `docking_vina`
+### Automatic download of docking_vina
 
 ```bash
 bash scripts/setup_docking.sh
 ```
 
-This downloads and unpacks the prepared `docking_vina/` folder used by the project.
-
-### What is included in `docking_vina`?
-
-The downloaded `docking_vina/` bundle contains the prepared docking workflow used in this project, including the required AutoGrow-related files and folder structure.
-
 ### MGLTools installation
 
-MGLTools must still be installed **manually** and **outside the repository**.
-
-Download MGLTools from:
-
-👉 https://ccsb.scripps.edu/mgltools/
-
-Then install it, for example:
+Download from:
+https://ccsb.scripps.edu/mgltools/
 
 ```bash
 tar -zxvf mgltools_*.tar.gz
 cd mgltools_x86_64Linux2_1.5.6
 ./install.sh
-cd ..
 ```
 
-This is typically installed in a user directory, for example on HPC systems:
-
-```bash
-/LUSTRE/users/<user>/
-```
 ### Configure docking
 
 Edit:
@@ -172,48 +140,47 @@ Edit:
 config/docking/vars_mgltools.json
 ```
 
-Set:
-- receptor path
-- `center_x`, `center_y`, `center_z`
-- `size_x`, `size_y`, `size_z`
+This file contains installation-dependent paths that must be adapted to your local or HPC environment.
 
+Review and update:
+
+- nn1_script
+- nn2_script
+- prepare_ligand4.py
+- prepare_receptor4.py
+- mgl_python
+- mgltools_directory
+- filename_of_receptor
+- root_output_folder
+- source_compound_file
+- output_directory
+- final_folder
+
+Also define the docking box:
+
+- center_x, center_y, center_z
+- size_x, size_y, size_z
 
 ---
 
 ## ✅ Minimal checklist
 
-Before running RL with docking reward, make sure that:
-
 - datasets are in place
-- tokenizer `.pkl` is available
-- `.npy` embeddings are generated
-- checkpoint path is valid
-- `docking_vina/` has been downloaded
-- MGLTools is installed outside the repo
-- docking config is filled correctly
+- tokenizer .pkl exists
+- embeddings .npy generated
+- checkpoint path valid
+- docking_vina downloaded
+- MGLTools installed
+- docking config filled
 
 ---
-## ⚠️ Status
-
-Actively developed.  
-Stable for inference and RL workflows.
-
----
-
-## 📜 License
-
-MIT License
-
-
-------------------------------------------------------------------------
 
 ## ⚡ Compute Requirements
 
--   Pretraining / finetuning: 4 GPUs\
--   Reinforcement Learning: 2 GPUs
+- Pretraining / finetuning: 4 GPUs
+- Reinforcement Learning: 2 GPUs
 
-------------------------------------------------------------------------
-
+---
 
 ## 📜 License
 
